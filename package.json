@@ -1,0 +1,39 @@
+{
+  "name": "appstore-connect-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for App Store Connect - reliable bridge between iOS metrics and AI assistants",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:auth": "tsx src/test-auth.ts",
+    "test:api": "tsx src/test-api.ts"
+  },
+  "keywords": [
+    "mcp",
+    "app-store-connect",
+    "ios",
+    "metrics",
+    "claude"
+  ],
+  "author": "Trial and Error Inc",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.3",
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

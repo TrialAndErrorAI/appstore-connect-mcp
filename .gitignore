@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+*.js
+*.js.map
+*.d.ts
+!src/**/*.ts
+
+# Environment and secrets
+.env
+.env.local
+.env.test
+.env.production
+*.p8
+AuthKey_*.p8
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+.cache/
