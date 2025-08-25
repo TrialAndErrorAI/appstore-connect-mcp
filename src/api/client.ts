@@ -44,13 +44,33 @@ export class AppStoreClient {
   /**
    * Make a GET request to the App Store Connect API
    */
-  async request<T = any>(endpoint: string, params?: any): Promise<T> {
+  async request<T = any>(endpoint: string, params?: any, options?: AxiosRequestConfig): Promise<T> {
     // Check rate limit
     await this.checkRateLimit();
 
     try {
-      const response = await this.axiosInstance.get<T>(endpoint, { params });
+      // For reports endpoints, we need to handle binary/gzipped responses
+      const isReportEndpoint = endpoint.includes('Reports');
+      const config: AxiosRequestConfig = {
+        params,
+        ...options
+      };
+      
+      // Set response type to arraybuffer for report endpoints to handle gzipped data
+      if (isReportEndpoint) {
+        config.responseType = 'arraybuffer';
+      }
+      
+      const response = await this.axiosInstance.get<T>(endpoint, config);
       this.requestCount++;
+      
+      // For report endpoints, convert arraybuffer to string
+      if (isReportEndpoint && response.data instanceof ArrayBuffer) {
+        // Convert ArrayBuffer to string for processing
+        const buffer = Buffer.from(response.data);
+        return buffer as any;
+      }
+      
       return response.data;
     } catch (error) {
       // Error is already handled by interceptor
@@ -140,6 +160,9 @@ export class AppStoreClient {
           case 403:
             throw new Error(`Permission denied: ${message}. Check your API key permissions.`);
           case 404:
+            // Log more details for debugging  
+            process.stderr.write(`404 Debug - URL: ${error.request?.path || error.config?.url}\n`);
+            process.stderr.write(`404 Debug - Params: ${JSON.stringify(error.config?.params)}\n`);
             throw new Error(`Resource not found: ${message}`);
           case 429:
             // Rate limited - wait and retry

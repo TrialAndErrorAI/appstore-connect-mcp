@@ -1,6 +1,6 @@
 {
   "name": "appstore-connect-mcp",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "MCP server for App Store Connect - reliable bridge between iOS metrics and AI assistants",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,12 @@
     "test": "vitest",
     "test:watch": "vitest watch",
     "test:auth": "tsx src/test-auth.ts",
-    "test:api": "tsx src/test-api.ts"
+    "test:api": "tsx src/test-api.ts",
+    "test:subscription-params": "tsx src/test-subscription-params.ts",
+    "test:monthly-aggregate": "tsx src/test-monthly-aggregate.ts",
+    "test:v1.1.1": "tsx src/test-v1.1.1-fixes.ts",
+    "test:july-revenue": "tsx src/test-july-revenue.ts",
+    "test:fixed-revenue": "tsx src/test-fixed-revenue.ts"
   },
   "keywords": [
     "mcp",

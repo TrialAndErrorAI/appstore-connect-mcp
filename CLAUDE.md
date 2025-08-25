@@ -1,5 +1,12 @@
 # App Store Connect MCP Project Memory
 
+## ⚠️ PUBLIC REPOSITORY RULES
+- **This is a PUBLIC GitHub repository**
+- **NEVER include specific revenue numbers in commits**
+- **Keep commit messages vague about financial data**
+- **Use terms like "improved accuracy" not specific percentages**
+- **Remove actual dollar amounts from documentation**
+
 ## 🚨 PROJECT CONTEXT
 **Created**: August 21, 2025 @ 2:24 PM  
 **Why**: NPM package @joshuarileydev/app-store-connect-mcp-server returns 404. We build our own.  
@@ -309,6 +316,29 @@ From App Store Connect → Users and Access → Keys:
 6. **Apple JWT**: No 'scope' field in JWT payload for App Store Connect
    - Remove scope field from JWT generation
    - Apple's API uses different auth patterns than expected
+
+## API Response Handling
+1. **GZIPPED Responses**: Apple returns gzipped CSV data for reports
+   - Detect gzip header: starts with `\u001f\u008b\u0008`
+   - Use Node's zlib: `import { gunzipSync } from 'zlib'`
+   - Pattern: `const decompressed = gunzipSync(Buffer.from(response))`
+
+2. **Version Requirements**: Different Apple report types need different versions
+   - Sales reports: version "1_1"
+   - Subscription reports: version "1_3"  
+   - Financial reports: version "1_0"
+   - Error message tells you the correct version: "The latest version for this report is X_X"
+
+3. **Testing Financial APIs**: 
+   - Create dedicated test scripts (test-financial.ts)
+   - Test each report type separately
+   - Check response type and length before processing
+
+## Pragmatic Debugging - MCP Specific
+- When API returns unexpected format, check first 10 bytes for magic headers
+- Binary/compressed data shows as unicode garbage in console
+- Use Buffer.from() and check for compression headers
+- Apple's API errors are actually helpful - they tell you the correct version
 
 ### Root Cause Philosophy
 - **Fix the problem, not the blame** - Focus on solutions
