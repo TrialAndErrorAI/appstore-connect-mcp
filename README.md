@@ -65,10 +65,13 @@ Once configured, Claude can help you with:
 - **Subscription Analytics**: "Show me active subscriber count and churn rate"
 - **App Performance**: "List all our iOS apps with their current versions"
 - **Revenue Insights**: "Calculate our ARR and growth rate"
+- **Xcode Cloud CI/CD**: "Show me recent Xcode Cloud build status" ✨ NEW
+- **Build Monitoring**: "What workflows are configured for Produciesta?" ✨ NEW
+- **Build Analytics**: "Show me build success rate and recent failures" ✨ NEW
+- **TestFlight**: "Show me TestFlight metrics and beta tester count"
+- **Customer Reviews**: "Get recent customer reviews and ratings"
 - **API Health**: "Test the App Store Connect connection"
 - **Usage Monitoring**: "Show API rate limit status"
-
-*More features coming soon: crash analytics, TestFlight metrics, customer reviews*
 
 ## Architecture
 
@@ -154,8 +157,9 @@ MIT - Use it, modify it, sell it. Just make it work.
 
 ## Available Tools
 
-The MCP server exposes 8 tools to Claude:
+The MCP server exposes 18+ tools to Claude:
 
+### App & Financial Tools
 | Tool | Description | Status |
 |------|-------------|--------|
 | `list_apps` | Get all apps in your account | ✅ Ready |
@@ -163,7 +167,29 @@ The MCP server exposes 8 tools to Claude:
 | `get_sales_report` | Fetch sales and subscription data | ✅ Ready |
 | `get_revenue_metrics` | Calculate MRR, ARR, churn | ✅ Ready |
 | `get_subscription_metrics` | Subscription analytics | ✅ Ready |
-| `get_app_analytics` | User engagement metrics | 🔄 Stub |
+| `get_monthly_revenue` | Monthly revenue breakdown | ✅ Ready |
+
+### Xcode Cloud CI/CD Tools ✨ NEW
+| Tool | Description | Status |
+|------|-------------|--------|
+| `list_xcode_cloud_products` | List all Xcode Cloud products | ✅ Ready |
+| `get_xcode_cloud_workflows` | Get workflows for a product | ✅ Ready |
+| `get_xcode_cloud_builds` | Get recent build runs | ✅ Ready |
+| `get_xcode_cloud_build_details` | Get detailed build information | ✅ Ready |
+| `get_xcode_cloud_summary` | Comprehensive CI/CD summary | ✅ Ready |
+
+### Beta Testing & Reviews
+| Tool | Description | Status |
+|------|-------------|--------|
+| `get_testflight_metrics` | TestFlight beta testing metrics | ✅ Ready |
+| `get_beta_testers` | List beta testers | ✅ Ready |
+| `get_customer_reviews` | Customer reviews and ratings | ✅ Ready |
+| `get_review_metrics` | Review analytics | ✅ Ready |
+
+### Analytics & Utilities
+| Tool | Description | Status |
+|------|-------------|--------|
+| `get_app_analytics` | User engagement metrics | ✅ Ready |
 | `test_connection` | Verify API access | ✅ Ready |
 | `get_api_stats` | Rate limit monitoring | ✅ Ready |
 

@@ -19,7 +19,8 @@
 - ✅ Project structure created in ~/Code/te/appstore-connect-mcp
 - ✅ Authentication layer complete - JWT generation working
 - ✅ API client built - rate limiting, pagination, error handling
-- ✅ MCP server wrapper done - 8 tools exposed to Claude
+- ✅ MCP server wrapper done - 18+ tools exposed to Claude
+- ✅ Xcode Cloud integration - Full CI/CD workflow monitoring
 - ✅ TypeScript compiles successfully
 - ✅ Published to GitHub: https://github.com/TrialAndErrorAI/appstore-connect-mcp
 - ✅ First Trial and Error Inc open source contribution
@@ -102,7 +103,7 @@
 ```typescript
 // Financial
 GET /v1/salesReports
-GET /v1/financeReports  
+GET /v1/financeReports
 
 // Analytics
 GET /v1/analyticsReportRequests
@@ -119,6 +120,14 @@ GET /v1/betaGroups
 // Reviews
 GET /v1/customerReviews
 GET /v1/apps/{id}/customerReviews
+
+// Xcode Cloud CI/CD ✨ NEW
+GET /v1/ciProducts                      # List Xcode Cloud products
+GET /v1/ciProducts/{id}/workflows       # Get workflows for product
+GET /v1/ciWorkflows/{id}                # Get workflow details
+GET /v1/ciWorkflows/{id}/buildRuns      # List builds for workflow
+GET /v1/ciBuildRuns/{id}                # Get build run details
+POST /v1/ciBuildRuns                    # Trigger workflow (future)
 ```
 
 ### JWT Token Structure
