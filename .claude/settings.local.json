@@ -45,7 +45,11 @@
       "Bash(npx tsc:*)",
       "Bash(APP_STORE_KEY_ID=$APP_STORE_KEY_ID APP_STORE_ISSUER_ID=$APP_STORE_ISSUER_ID APP_STORE_P8_PATH=$APP_STORE_P8_PATH APP_STORE_VENDOR_NUMBER=$APP_STORE_VENDOR_NUMBER npx tsx src/test-final-integration.ts)",
       "Bash(git reset:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh repo fork:*)",
+      "Bash(git remote:*)",
+      "Bash(git remote add:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

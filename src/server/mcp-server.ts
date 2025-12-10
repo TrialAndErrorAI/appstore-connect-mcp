@@ -14,6 +14,7 @@ import { AnalyticsService } from '../services/analytics-service.js';
 import { BetaService } from '../services/beta-service.js';
 import { ReviewService } from '../services/review-service.js';
 import { SubscriptionService } from '../services/subscription-service.js';
+import { XcodeCloudService } from '../services/xcode-cloud-service.js';
 import { ServerConfig } from '../types/config.js';
 
 export class AppStoreMCPServer {
@@ -27,6 +28,7 @@ export class AppStoreMCPServer {
   private betaService: BetaService;
   private reviewService: ReviewService;
   private subscriptionService: SubscriptionService;
+  private xcodeCloudService: XcodeCloudService;
 
   constructor(config: ServerConfig) {
     // Initialize server
@@ -52,6 +54,7 @@ export class AppStoreMCPServer {
     this.betaService = new BetaService(this.client);
     this.reviewService = new ReviewService(this.client);
     this.subscriptionService = new SubscriptionService(this.client, config.vendorNumber);
+    this.xcodeCloudService = new XcodeCloudService(this.client);
 
     // Register handlers
     this.registerHandlers();
@@ -291,6 +294,81 @@ export class AppStoreMCPServer {
         }
       },
 
+      // Xcode Cloud CI/CD tools
+      {
+        name: 'list_xcode_cloud_products',
+        description: 'List all Xcode Cloud products (apps and frameworks)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            productType: {
+              type: 'string',
+              enum: ['APP', 'FRAMEWORK'],
+              description: 'Filter by product type (optional)'
+            }
+          }
+        }
+      },
+      {
+        name: 'get_xcode_cloud_workflows',
+        description: 'Get workflows for a specific Xcode Cloud product',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            productId: {
+              type: 'string',
+              description: 'Product ID to get workflows for'
+            }
+          },
+          required: ['productId']
+        }
+      },
+      {
+        name: 'get_xcode_cloud_builds',
+        description: 'Get recent build runs for a specific workflow',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            workflowId: {
+              type: 'string',
+              description: 'Workflow ID to get builds for'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of builds to return (default: 20)'
+            }
+          },
+          required: ['workflowId']
+        }
+      },
+      {
+        name: 'get_xcode_cloud_build_details',
+        description: 'Get detailed information about a specific build run',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            buildRunId: {
+              type: 'string',
+              description: 'Build run ID to get details for'
+            }
+          },
+          required: ['buildRunId']
+        }
+      },
+      {
+        name: 'get_xcode_cloud_summary',
+        description: 'Get comprehensive Xcode Cloud summary with products, workflows, recent builds, and statistics',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            productId: {
+              type: 'string',
+              description: 'Optional: specific product ID to filter (e.g., for Produciesta)'
+            }
+          }
+        }
+      },
+
       // Utility tools
       {
         name: 'test_connection',
@@ -440,7 +518,35 @@ export class AppStoreMCPServer {
           throw new Error('App ID is required for review metrics');
         }
         return await this.reviewService.getReviewSummary(args.appId);
-      
+
+      // Xcode Cloud CI/CD tools
+      case 'list_xcode_cloud_products':
+        return await this.xcodeCloudService.listProducts(args.productType);
+
+      case 'get_xcode_cloud_workflows':
+        if (!args.productId) {
+          throw new Error('Product ID is required for workflows');
+        }
+        return await this.xcodeCloudService.getProductWorkflows(args.productId);
+
+      case 'get_xcode_cloud_builds':
+        if (!args.workflowId) {
+          throw new Error('Workflow ID is required for builds');
+        }
+        return await this.xcodeCloudService.getWorkflowBuilds(
+          args.workflowId,
+          args.limit || 20
+        );
+
+      case 'get_xcode_cloud_build_details':
+        if (!args.buildRunId) {
+          throw new Error('Build run ID is required');
+        }
+        return await this.xcodeCloudService.getBuildRun(args.buildRunId);
+
+      case 'get_xcode_cloud_summary':
+        return await this.xcodeCloudService.getXcodeCloudSummary(args.productId);
+
       // Utility tools
       case 'test_connection':
         const connected = await this.client.testConnection();
