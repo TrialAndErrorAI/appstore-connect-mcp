@@ -10,7 +10,7 @@ import { ServerConfig } from './types/config.js';
 
 // Suppress ALL console output for MCP server
 console.log = () => {};
-console.error = process.stderr.write.bind(process.stderr);
+console.error = (...args: unknown[]) => { process.stderr.write(args.map(String).join(' ') + '\n'); };
 console.warn = () => {};
 console.info = () => {};
 console.debug = () => {};

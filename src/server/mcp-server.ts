@@ -33,7 +33,7 @@ export class AppStoreMCPServer {
     this.server = new Server(
       {
         name: 'appstore-connect-mcp',
-        version: '1.1.0'
+        version: '1.2.0'
       },
       {
         capabilities: {
@@ -329,10 +329,17 @@ export class AppStoreMCPServer {
       
       // Financial tools
       case 'get_sales_report':
-        return await this.financeService.getSalesReport({
-          date: args.date,
-          reportType: args.reportType
-        });
+        try {
+          return await this.financeService.getSalesReport({
+            date: args.date,
+            reportType: args.reportType
+          });
+        } catch (error: any) {
+          if (error.message.toLowerCase().includes('no sales') || error.message.includes('not found') || error.message.includes('404')) {
+            return { rows: [], rowCount: 0, summary: `No sales data for ${args.date || 'requested date'}. Try a different date or use get_monthly_revenue for aggregated data.` };
+          }
+          throw error;
+        }
       
       case 'get_revenue_metrics':
         // Use FINANCIAL reports for complete revenue (includes renewals)
@@ -361,7 +368,14 @@ export class AppStoreMCPServer {
         }
       
       case 'get_subscription_metrics':
-        return await this.financeService.getSubscriptionMetrics();
+        try {
+          return await this.financeService.getSubscriptionMetrics();
+        } catch (error: any) {
+          if (error.message.toLowerCase().includes('invalid vendor') || error.message.includes('400') || error.message.includes('404')) {
+            return { summary: 'Subscription metrics not available via Sales Reports for this account. Use get_monthly_revenue or get_subscription_renewals instead.' };
+          }
+          throw error;
+        }
       
       case 'get_monthly_revenue':
         if (!args.year || !args.month) {

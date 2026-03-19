@@ -539,7 +539,7 @@ export class FinanceService {
         }
       } catch (error: any) {
         // 404 is expected for days with no data
-        if (!error.message.includes('404')) {
+        if (!error.message.includes('404') && !error.message.includes('not found') && !error.message.includes('no sales')) {
           console.error(`Error fetching data for ${dateStr}:`, error.message);
         }
       }

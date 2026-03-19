@@ -146,7 +146,16 @@ export class AppStoreClient {
   private async handleError(error: AxiosError): Promise<never> {
     if (error.response) {
       const status = error.response.status;
-      const data = error.response.data as AppStoreError | any;
+      let data = error.response.data as AppStoreError | any;
+
+      // Decode arraybuffer error responses (report endpoints return ArrayBuffer)
+      if (data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+        try {
+          data = JSON.parse(Buffer.from(data as ArrayBuffer).toString('utf-8'));
+        } catch {
+          data = {};
+        }
+      }
 
       // Check if it's an App Store error response
       if (data?.errors && Array.isArray(data.errors)) {
@@ -199,7 +208,7 @@ export class AppStoreClient {
   async testConnection(): Promise<boolean> {
     try {
       // Try to fetch apps (simplest endpoint)
-      const response = await this.request('/apps', { limit: 1 });
+      await this.request('/apps', { limit: 1 });
       return true;
     } catch (error) {
       return false;

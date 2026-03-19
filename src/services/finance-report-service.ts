@@ -248,7 +248,7 @@ export class FinanceReportService {
         }
       } catch (error: any) {
         // 404 is expected for regions without data
-        if (!error.message.includes('404')) {
+        if (!error.message.includes('404') && !error.message.includes('not found') && !error.message.includes('no sales')) {
           console.error(`Error fetching ${name} data:`, error.message);
         }
       }
@@ -292,25 +292,17 @@ export class FinanceReportService {
       const fiscalPeriod = this.getFiscalPeriod(year, month);
       
       try {
-        // Test with US region first (most likely to have data)
-        await this.getFinancialReport({
-          fiscalPeriod,
-          regionCode: 'US'
-        });
-        
-        // If successful, get full summary
+        // Get full summary directly — handles all regions with per-region 404 fallback
         const summary = await this.getMonthlySummary(year, month);
-        
-        if (summary.totalRevenue > 0) {
-          return {
-            totalRevenue: summary.totalRevenue,
-            byRegion: summary.byRegion,
-            metadata: {
-              fiscalPeriod,
-              month: `${year}-${String(month).padStart(2, '0')}`
-            }
-          };
-        }
+
+        return {
+          totalRevenue: summary.totalRevenue,
+          byRegion: summary.byRegion,
+          metadata: {
+            fiscalPeriod,
+            month: `${year}-${String(month).padStart(2, '0')}`
+          }
+        };
       } catch (error) {
         // Continue to next month
       }
