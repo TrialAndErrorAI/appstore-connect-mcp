@@ -1,36 +1,46 @@
-# App Store Connect MCP Server
+# App Store Connect MCP Server — Code Mode
 
-**By Trial and Error Inc**  
-*The reliable bridge between App Store Connect and AI assistants*
+**923 endpoints. 2 tools. The spec IS the implementation.**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.17-green)](https://modelcontextprotocol.io)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.27-green)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange)](https://github.com/TrialAndErrorAI/appstore-connect-mcp)
+[![API Version](https://img.shields.io/badge/ASC%20API-v4.3-orange)](https://developer.apple.com/app-store-connect/api/)
 
-## Problem
+## The Problem
 
-You need iOS app metrics in Claude. The "official" MCP servers are broken. Manual exports waste hours. This fixes that.
+Traditional MCP servers wrap each API endpoint as a separate tool. Apple's App Store Connect API has **923 endpoints**. That means 923 tool definitions, ~100K+ context tokens, and a new release every time Apple adds an endpoint.
 
-## Solution
+## The Solution
 
-A working MCP server for App Store Connect. Built in 3 hours. No dependencies on broken packages. It just works.
+Code Mode: **2 tools replace 923**.
+
+| Tool | What It Does |
+|------|-------------|
+| `search(code)` | Write JS to query Apple's OpenAPI spec. Discover endpoints, check parameters, read schemas. |
+| `execute(code)` | Write JS to call the API. Auth is automatic. Chain multiple calls. |
+
+The LLM writes the query. The spec IS the implementation. Adding endpoints = Apple updates their spec. Zero code changes on our side.
+
+```
+Traditional MCP:  923 endpoints → 923 tools → ~100K tokens → constant maintenance
+Code Mode:        923 endpoints → 2 tools   → ~1K tokens   → zero maintenance
+```
 
 ## Quick Start
 
 ```bash
-# Clone the repo
 git clone https://github.com/TrialAndErrorAI/appstore-connect-mcp
 cd appstore-connect-mcp
-
-# Install dependencies
 npm install
-
-# Build
 npm run build
+```
 
-# Configure Claude Desktop
-# Add to ~/Library/Application Support/Claude/claude_desktop_config.json:
+### Configure for Claude Code
+
+Add to your project's `.mcp.json`:
+
+```json
 {
   "mcpServers": {
     "appstore-connect": {
@@ -39,241 +49,199 @@ npm run build
       "env": {
         "APP_STORE_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",
-        "APP_STORE_P8_PATH": "/path/to/key.p8"
+        "APP_STORE_P8_PATH": "/path/to/AuthKey.p8",
+        "APP_STORE_VENDOR_NUMBER": "YOUR_VENDOR_NUMBER"
       }
     }
   }
 }
-
-# Restart Claude Desktop
 ```
 
-## Getting App Store Connect Credentials
+### Configure for Claude Desktop
 
-1. Go to [App Store Connect](https://appstoreconnect.apple.com)
-2. Navigate to Users and Access → Keys
-3. Click "+" to generate a new key
-4. Select "Admin" or "Finance" role
-5. Download the .p8 file (ONLY downloadable once!)
-6. Note your Key ID and Issuer ID
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
-## What You Can Ask Claude
+```json
+{
+  "mcpServers": {
+    "appstore-connect": {
+      "command": "node",
+      "args": ["/path/to/appstore-connect-mcp/dist/index.js"],
+      "env": {
+        "APP_STORE_KEY_ID": "YOUR_KEY_ID",
+        "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",
+        "APP_STORE_P8_PATH": "/path/to/AuthKey.p8"
+      }
+    }
+  }
+}
+```
 
-Once configured, Claude can help you with:
+### Get Credentials
 
-- **Financial Metrics**: "What's our iOS monthly recurring revenue?"
-- **Subscription Analytics**: "Show me active subscriber count and churn rate"
-- **App Performance**: "List all our iOS apps with their current versions"
-- **Revenue Insights**: "Calculate our ARR and growth rate"
-- **API Health**: "Test the App Store Connect connection"
-- **Usage Monitoring**: "Show API rate limit status"
+1. Go to [App Store Connect](https://appstoreconnect.apple.com) → Users and Access → Integrations → Keys
+2. Click "+" to generate a new key (Admin or Finance role)
+3. Download the .p8 file (only downloadable once!)
+4. Note your Key ID and Issuer ID
 
-*More features coming soon: crash analytics, TestFlight metrics, customer reviews*
+## Usage Examples
+
+### Discover endpoints
+
+```
+search: "Find all endpoints related to customer reviews"
+```
+
+The LLM writes:
+```javascript
+const reviews = Object.entries(spec.paths)
+  .filter(([p]) => p.includes('customerReview'))
+  .map(([path, methods]) => ({
+    path,
+    methods: Object.keys(methods).map(m => m.toUpperCase())
+  }));
+return reviews;
+```
+
+### List your apps
+
+```
+execute: "List all my apps"
+```
+
+The LLM writes:
+```javascript
+const apps = await api.request({ method: 'GET', path: '/v1/apps' });
+return apps.data.map(a => ({ id: a.id, name: a.attributes.name }));
+```
+
+### Chain multiple calls
+
+```
+execute: "Get latest reviews for my first app"
+```
+
+The LLM writes:
+```javascript
+const apps = await api.request({ method: 'GET', path: '/v1/apps', params: { limit: '1' } });
+const appId = apps.data[0].id;
+const reviews = await api.request({
+  method: 'GET',
+  path: `/v1/apps/${appId}/customerReviews`,
+  params: { limit: '5', sort: '-createdDate' }
+});
+return {
+  app: apps.data[0].attributes.name,
+  reviews: reviews.data.map(r => ({
+    rating: r.attributes.rating,
+    title: r.attributes.title,
+    body: r.attributes.body
+  }))
+};
+```
+
+## What You Can Access
+
+All 923 App Store Connect API endpoints, including:
+
+| Category | Endpoints | What You Get |
+|----------|-----------|-------------|
+| **App Metadata** | 29 | Title, subtitle, keywords, description — read AND write |
+| **Analytics** | 10 | Impressions, page views, downloads, source attribution |
+| **Sales & Finance** | 2 | Revenue, units, proceeds by country |
+| **Customer Reviews** | 5 | Ratings, review text, respond to reviews |
+| **Subscriptions** | 30 | Sub management, pricing, groups, offers |
+| **In-App Purchases** | 29 | IAP management, offer codes |
+| **Versions** | 28 | Version management, phased rollout |
+| **Screenshots** | 12 | Upload, reorder, manage screenshot sets |
+| **A/B Testing** | 24 | Product page experiments, treatment variants |
+| **Custom Product Pages** | 18 | Custom landing pages per ad campaign |
+| **TestFlight** | 23 | Beta groups, testers, builds |
+| **Pricing** | 11 | Per-territory pricing, price points |
+| **Builds** | 29 | Build management, processing state |
+
+See [API-COVERAGE.md](docs/API-COVERAGE.md) for the full grouped map.
+
+## How It Works
+
+```
+Claude writes JavaScript
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ search({ code })                                │
+│  Sandbox executes code against OpenAPI spec     │
+│  923 paths, 1337 schemas — pre-resolved $refs   │
+│  Returns: matching endpoints + parameters       │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ execute({ code })                               │
+│  Sandbox executes code against auth'd client    │
+│  JWT injected — code never sees credentials     │
+│  Supports GET/POST/PATCH/DELETE + chaining      │
+│  Auto-decompresses gzipped report responses     │
+│  Returns: API response (truncated to 40K chars) │
+└─────────────────────────────────────────────────┘
+```
+
+### Security
+
+- Code runs in Node.js `vm` sandbox
+- No `fetch`, `require`, `process`, `eval`, `setTimeout` available
+- Credentials injected via binding — never visible to generated code
+- Response truncated to prevent context bloat
+- Only `spec` (search) or `api` (execute) available as globals
 
 ## Architecture
 
-See [RFC-001-architecture.md](RFC-001-architecture.md) for technical details.
-
-## Project Structure
-
 ```
-appstore-connect-mcp/
-├── PRFAQ.md               # Product vision and FAQ
-├── RFC-001-architecture.md # Technical specification
-├── src/
-│   ├── auth/             # JWT authentication
-│   ├── api/              # App Store Connect client
-│   ├── services/         # Domain logic
-│   └── server/           # MCP server implementation
-├── tests/                # Test suite
-└── dist/                 # Compiled output
+src/
+├── auth/jwt-manager.ts      — JWT with P8 key, ES256, 19-min cache
+├── api/client.ts             — HTTP client, rate limiting, gzip handling
+├── spec/
+│   ├── openapi.json          — Apple's official spec (923 endpoints)
+│   └── loader.ts             — Loads + resolves $refs for flat traversal
+├── executor/sandbox.ts       — vm-based sandboxed execution
+├── server/mcp-server.ts      — MCP server (3 tools)
+└── index.ts                  — Entry point
 ```
+
+## Why Code Mode?
+
+| | Traditional MCP | Code Mode |
+|---|---|---|
+| **Tools** | 1 per endpoint (923) | 2 total |
+| **Context tokens** | ~100K+ | ~1K |
+| **Adding endpoints** | New tool + code + schema + release | Apple updates spec. Zero changes. |
+| **Chaining calls** | Re-enter LLM between each | Single execution, multiple calls |
+| **Maintenance** | Update 923 tool definitions | Update 1 spec file |
+
+Inspired by [Cloudflare's Code Mode pattern](https://blog.cloudflare.com/code-mode/).
 
 ## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Type check
-npm run type-check
+npm install          # Install dependencies
+npm run build        # Compile + copy spec
+npm run dev          # Watch mode (tsx)
+npm start            # Run compiled server
+npm run type-check   # TypeScript check
 ```
-
-## Why We Built This
-
-Our portfolio company [RenovateAI](https://renovateai.app) is ranked #28 in Design Tools on the App Store. We needed real-time iOS metrics in Claude to make data-driven decisions. The existing solutions failed us:
-
-- `@joshuarileydev/app-store-connect-mcp-server` - NPM 404 error
-- Manual API integration - Days of work, maintenance burden
-- CSV exports - Manual, error-prone, time-consuming
-
-So we built our own. Clean, typed, reliable. In 3 hours flat.
-
-## Status
-
-🚀 **ALPHA RELEASE** - MVP Complete, Ready for Testing
-
-### Completed ✅
-- [x] PRFAQ written - Vision crystallized
-- [x] RFC drafted - Architecture defined  
-- [x] Authentication module - JWT with P8 keys
-- [x] API client - Rate limiting, pagination, error handling
-- [x] MCP server - 8 tools exposed to Claude
-- [x] Core services - App and Finance services
-- [x] TypeScript setup - Full type safety
-- [x] Build system - Clean compilation
-- [x] Documentation - Setup guides and API docs
-
-### In Progress 🔄
-- [ ] Live testing with real App Store Connect account
-- [ ] Analytics service implementation
-- [ ] Comprehensive test suite
-- [ ] npm package publishing
-
-### Roadmap 📍
-- [ ] Automated testing with GitHub Actions
-- [ ] More financial report types
-- [ ] TestFlight integration
-- [ ] Customer reviews analysis
-- [ ] Crash reporting metrics
-
-**Current Status**: MVP complete, awaiting App Store Connect credentials for live testing
 
 ## License
 
-MIT - Use it, modify it, sell it. Just make it work.
-
-## Available Tools
-
-The MCP server exposes 8 tools to Claude:
-
-| Tool | Description | Status |
-|------|-------------|--------|
-| `list_apps` | Get all apps in your account | ✅ Ready |
-| `get_app` | Get detailed app information | ✅ Ready |
-| `get_sales_report` | Fetch sales and subscription data | ✅ Ready |
-| `get_revenue_metrics` | Calculate MRR, ARR, churn | ✅ Ready |
-| `get_subscription_metrics` | Subscription analytics | ✅ Ready |
-| `get_app_analytics` | User engagement metrics | 🔄 Stub |
-| `test_connection` | Verify API access | ✅ Ready |
-| `get_api_stats` | Rate limit monitoring | ✅ Ready |
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. "Unexpected token" errors in Claude logs
-
-**Cause**: Console output polluting JSON-RPC stream  
-**Fix**: Ensure no `console.log` statements in production code  
-**Check**: `/Users/sid/Library/Logs/Claude/mcp-server-appstore-connect.log`
-
-```bash
-# Look for console output in logs
-tail -f ~/Library/Logs/Claude/mcp-server-appstore-connect.log
-```
-
-#### 2. "Illegal scope GET" error
-
-**Cause**: Apple's JWT doesn't use 'scope' field  
-**Fix**: Remove scope from JWT payload in `jwt-manager.ts`
-
-The JWT payload should only include:
-```javascript
-{
-  "iss": "ISSUER_ID",
-  "iat": 1234567890,
-  "exp": 1234568890,
-  "aud": "appstoreconnect-v1"
-}
-```
-
-#### 3. MCP not connecting
-
-**Troubleshooting steps**:
-1. Check credentials in Claude config
-2. Verify P8 file has correct permissions: `chmod 600 /path/to/key.p8`
-3. Test authentication manually:
-   ```bash
-   source .env && npm run test:auth
-   ```
-4. Verify Claude Desktop config path: `~/Library/Application Support/Claude/claude_desktop_config.json`
-5. Restart Claude Desktop after config changes
-
-#### 4. Financial reports error
-
-**Common fixes**:
-- Add version parameter: `version: "1_4"` for reports
-- Vendor number required for financial data (find in App Store Connect → Payments)
-- Ensure API key has "Finance" role permissions
-
-#### 5. Empty or missing data
-
-**Check**:
-- App ID exists and you have access permissions
-- Date ranges are valid (Apple keeps limited historical data)
-- Reports are available for your region/app
-
-#### 6. Rate limiting (429 errors)
-
-**Solutions**:
-- Built-in exponential backoff should handle this automatically
-- If persistent, reduce request frequency
-- Check API usage: use the `get_api_stats` tool in Claude
-
-#### 7. Authentication token expired
-
-**Fix**: Tokens auto-refresh every 19 minutes. If issues persist:
-```bash
-# Clear any cached tokens and restart
-rm -f ~/.appstore-connect-token-cache
-```
-
-### Debug Mode
-
-Enable detailed logging:
-```bash
-export DEBUG=appstore-connect:*
-npm start
-```
-
-### Verification Commands
-
-```bash
-# Test P8 key format
-openssl pkey -in /path/to/key.p8 -text -noout
-
-# Test API connectivity
-curl -H "Authorization: Bearer $(npm run generate-token)" \
-     https://api.appstoreconnect.apple.com/v1/apps
-
-# Validate Claude config
-cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq .
-```
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/TrialAndErrorAI/appstore-connect-mcp/issues)
-- **Discussions**: Coming soon
-- **Email**: mcp@trialanderror.ai
+MIT — Use it, modify it, sell it. Just make it work.
 
 ## Credits
 
-Built by [Trial and Error Inc](https://trialanderror.ai) because broken dependencies are unacceptable.
+Built by [Trial and Error Inc](https://trialanderror.ai).
 
-First production use: [RenovateAI](https://renovateai.app) - The AI that understands architecture.
+First production use: [RenovateAI](https://renovateai.app) — AI home design, #28 in Design Tools.
+
+Code mode pattern from [Cloudflare](https://blog.cloudflare.com/code-mode/).
 
 ---
 
-*"We don't wait for packages to work. We build."* - Trial and Error Inc
-
-**Star this repo** if you found it useful! We're building more MCP servers for the tools you actually use.
+*"We don't implement individual endpoints. We implement the ability to call ANY endpoint."*

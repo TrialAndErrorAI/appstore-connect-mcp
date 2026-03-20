@@ -37,3 +37,14 @@ logs/
 tmp/
 temp/
 .cache/
+
+# Internal dev files (not for public repo)
+CLAUDE.md
+next_session.md
+.claude/
+docs/session-summary-final.md
+docs/revenue-calculation-fix-analysis.md
+docs/test-results-*.md
+docs/v1.1.1-*.md
+docs/RFC-001-completion-report.md
+docs/RFC-001-tracker.md
