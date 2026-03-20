@@ -1,11 +1,11 @@
 {
   "name": "appstore-connect-mcp",
-  "version": "1.2.0",
-  "description": "MCP server for App Store Connect - reliable bridge between iOS metrics and AI assistants",
+  "version": "2.0.0",
+  "description": "Code Mode MCP server for App Store Connect — 923 endpoints through 2 tools",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp src/spec/openapi.json dist/spec/openapi.json",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit",
     "test": "vitest",

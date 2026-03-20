@@ -1,3 +1,12 @@
+/**
+ * App Store Connect MCP Server — Code Mode (v2.0)
+ *
+ * Two tools. 923 endpoints. Fixed token cost.
+ *
+ * search(code) — Agent writes JS to query the API spec
+ * execute(code) — Agent writes JS to call the authenticated API
+ */
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -7,33 +16,21 @@ import {
 
 import { JWTManager } from '../auth/jwt-manager.js';
 import { AppStoreClient } from '../api/client.js';
-import { AppService } from '../services/app-service.js';
-import { FinanceService } from '../services/finance-service.js';
-import { FinanceReportService } from '../services/finance-report-service.js';
-import { AnalyticsService } from '../services/analytics-service.js';
-import { BetaService } from '../services/beta-service.js';
-import { ReviewService } from '../services/review-service.js';
-import { SubscriptionService } from '../services/subscription-service.js';
+import { loadSpec } from '../spec/loader.js';
+import { executeInSandbox } from '../executor/sandbox.js';
 import { ServerConfig } from '../types/config.js';
 
 export class AppStoreMCPServer {
   private server: Server;
   private auth: JWTManager;
   private client: AppStoreClient;
-  private appService: AppService;
-  private financeService: FinanceService;
-  private financeReportService: FinanceReportService;
-  private analyticsService: AnalyticsService;
-  private betaService: BetaService;
-  private reviewService: ReviewService;
-  private subscriptionService: SubscriptionService;
+  private spec: any;
 
   constructor(config: ServerConfig) {
-    // Initialize server
     this.server = new Server(
       {
         name: 'appstore-connect-mcp',
-        version: '1.2.0'
+        version: '2.0.0'
       },
       {
         capabilities: {
@@ -42,50 +39,37 @@ export class AppStoreMCPServer {
       }
     );
 
-    // Initialize auth and services
     this.auth = new JWTManager(config.auth);
     this.client = new AppStoreClient(this.auth);
-    this.appService = new AppService(this.client);
-    this.financeService = new FinanceService(this.client, config.vendorNumber);
-    this.financeReportService = new FinanceReportService(this.client, config.vendorNumber || '');
-    this.analyticsService = new AnalyticsService(this.client);
-    this.betaService = new BetaService(this.client);
-    this.reviewService = new ReviewService(this.client);
-    this.subscriptionService = new SubscriptionService(this.client, config.vendorNumber);
 
-    // Register handlers
+    // Load the OpenAPI spec (923 paths, pre-resolved)
+    this.spec = loadSpec();
+
     this.registerHandlers();
   }
 
   private registerHandlers() {
-    // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: this.getToolDefinitions()
     }));
 
-    // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
+
       try {
         const result = await this.executeTool(name, args || {});
-        
         return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2)
-            }
-          ]
+          content: [{
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+          }]
         };
       } catch (error) {
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`
-            }
-          ],
+          content: [{
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`
+          }],
           isError: true
         };
       }
@@ -94,215 +78,89 @@ export class AppStoreMCPServer {
 
   private getToolDefinitions(): any[] {
     return [
-      // App tools
       {
-        name: 'list_apps',
-        description: 'Get list of all apps in your App Store Connect account',
-        inputSchema: {
-          type: 'object',
-          properties: {}
-        }
-      },
-      {
-        name: 'get_app',
-        description: 'Get detailed information about a specific app',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'The App Store Connect app ID'
-            },
-            bundleId: {
-              type: 'string',
-              description: 'Alternative: find app by bundle ID'
-            }
-          }
-        }
-      },
-      
-      // Financial tools
-      {
-        name: 'get_sales_report',
-        description: 'Get sales report for your apps',
+        name: 'search',
+        description: `Write JavaScript to explore the App Store Connect API specification (${this.spec.pathCount} endpoints, ${this.spec.schemaCount} schemas, API v${this.spec.info.version}).
+
+Available globals:
+- \`spec\` — Object with all API endpoints. Structure: spec.paths['/v1/endpoint'].method
+
+How to use:
+- List all paths: Object.keys(spec.paths)
+- Filter by keyword: Object.entries(spec.paths).filter(([p]) => p.includes('reviews'))
+- Get endpoint details: spec.paths['/v1/apps'].get
+- Check parameters: spec.paths['/v1/apps'].get.parameters
+- Check response schema: spec.paths['/v1/apps'].get.responses
+- Get tags: spec.paths['/v1/apps'].get.tags
+- Search by tag: Object.entries(spec.paths).filter(([p, m]) => Object.values(m).some(op => op.tags?.includes('Apps')))
+
+Return your findings as a value or use console.log().
+
+Example — find all review-related endpoints:
+  const reviews = Object.entries(spec.paths)
+    .filter(([p]) => p.toLowerCase().includes('review'))
+    .map(([path, methods]) => ({
+      path,
+      methods: Object.entries(methods).map(([m, op]) => ({ method: m.toUpperCase(), summary: op.summary }))
+    }));
+  return reviews;`,
         inputSchema: {
           type: 'object',
           properties: {
-            date: {
+            code: {
               type: 'string',
-              description: 'Date in YYYY-MM-DD format (defaults to yesterday)'
-            },
-            reportType: {
-              type: 'string',
-              enum: ['SALES', 'SUBSCRIPTION'],
-              description: 'Type of report'
-            }
-          }
-        }
-      },
-      {
-        name: 'get_revenue_metrics',
-        description: 'Get calculated revenue metrics (MRR, ARR, etc)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'Optional: specific app ID to filter'
-            }
-          }
-        }
-      },
-      {
-        name: 'get_subscription_metrics',
-        description: 'Get subscription-specific metrics',
-        inputSchema: {
-          type: 'object',
-          properties: {}
-        }
-      },
-      {
-        name: 'get_monthly_revenue',
-        description: 'Get aggregated monthly revenue (sums all daily reports)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            year: {
-              type: 'number',
-              description: 'Year (e.g., 2025)'
-            },
-            month: {
-              type: 'number',
-              description: 'Month (1-12)'
+              description: 'JavaScript code to execute. Has access to the `spec` object containing the full App Store Connect OpenAPI specification.'
             }
           },
-          required: ['year', 'month']
+          required: ['code']
         }
       },
       {
-        name: 'get_subscription_renewals',
-        description: 'Get subscription renewal data for a specific date',
+        name: 'execute',
+        description: `Write JavaScript to call the App Store Connect API. Authentication is automatic (JWT injected).
+
+Available globals:
+- \`api\` — Authenticated client for App Store Connect.
+
+Usage:
+  const result = await api.request({
+    method: 'GET',             // GET, POST, PATCH, DELETE
+    path: '/v1/apps',          // API path (from search results)
+    params: { limit: '10' },   // Query parameters (optional)
+    body: { ... }              // Request body for POST/PATCH (optional)
+  });
+
+The response is parsed JSON. You can chain multiple API calls in one execution.
+Use try/catch for error handling. Reports endpoints may return gzipped data — the client handles decompression.
+
+Example — list apps then get reviews for first app:
+  const apps = await api.request({ method: 'GET', path: '/v1/apps', params: { limit: '5' } });
+  const appId = apps.data[0].id;
+  const appName = apps.data[0].attributes.name;
+  const reviews = await api.request({
+    method: 'GET',
+    path: '/v1/apps/' + appId + '/customerReviews',
+    params: { limit: '5', sort: '-createdDate' }
+  });
+  return {
+    app: appName,
+    reviewCount: reviews.data.length,
+    latest: reviews.data[0]?.attributes
+  };`,
         inputSchema: {
           type: 'object',
           properties: {
-            date: {
+            code: {
               type: 'string',
-              description: 'Date in YYYY-MM-DD format (optional, defaults to yesterday)'
-            }
-          }
-        }
-      },
-      {
-        name: 'get_monthly_subscription_analytics',
-        description: 'Get comprehensive subscription analytics for a month',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            year: {
-              type: 'number',
-              description: 'Year (e.g., 2025)'
-            },
-            month: {
-              type: 'number',
-              description: 'Month (1-12)'
+              description: 'JavaScript code to execute. Has access to the authenticated `api` client for App Store Connect.'
             }
           },
-          required: ['year', 'month']
+          required: ['code']
         }
       },
-
-      // Analytics tools
-      {
-        name: 'get_app_analytics',
-        description: 'Get app usage analytics',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'App ID to get analytics for'
-            },
-            metricType: {
-              type: 'string',
-              enum: ['USERS', 'SESSIONS', 'CRASHES', 'RETENTION'],
-              description: 'Type of metric to retrieve'
-            }
-          }
-        }
-      },
-
-      // Beta testing tools
-      {
-        name: 'get_testflight_metrics',
-        description: 'Get TestFlight beta testing metrics',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'Optional: specific app ID to filter'
-            }
-          }
-        }
-      },
-      {
-        name: 'get_beta_testers',
-        description: 'Get list of beta testers',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'number',
-              description: 'Maximum number of testers to return (default: 100)'
-            }
-          }
-        }
-      },
-
-      // Review tools
-      {
-        name: 'get_customer_reviews',
-        description: 'Get customer reviews and ratings',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'App ID to get reviews for'
-            },
-            limit: {
-              type: 'number',
-              description: 'Maximum number of reviews (default: 100)'
-            }
-          }
-        }
-      },
-      {
-        name: 'get_review_metrics',
-        description: 'Get comprehensive review metrics and sentiment analysis',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            appId: {
-              type: 'string',
-              description: 'App ID to analyze reviews for'
-            }
-          }
-        }
-      },
-
-      // Utility tools
       {
         name: 'test_connection',
-        description: 'Test connection to App Store Connect API',
-        inputSchema: {
-          type: 'object',
-          properties: {}
-        }
-      },
-      {
-        name: 'get_api_stats',
-        description: 'Get API usage statistics',
+        description: 'Test connection to App Store Connect API and show server info',
         inputSchema: {
           type: 'object',
           properties: {}
@@ -312,162 +170,60 @@ export class AppStoreMCPServer {
   }
 
   private async executeTool(name: string, args: any): Promise<any> {
-    
     switch (name) {
-      // App tools
-      case 'list_apps':
-        return await this.appService.getAllAppsSummary();
-      
-      case 'get_app':
-        if (args.bundleId) {
-          return await this.appService.getAppByBundleId(args.bundleId);
-        } else if (args.appId) {
-          return await this.appService.getAppSummary(args.appId);
-        } else {
-          throw new Error('Either appId or bundleId is required');
+      case 'search': {
+        if (!args.code) throw new Error('code is required');
+        const result = await executeInSandbox(args.code, { spec: this.spec });
+        if (result.error) {
+          return { error: result.error, logs: result.logs };
         }
-      
-      // Financial tools
-      case 'get_sales_report':
-        try {
-          return await this.financeService.getSalesReport({
-            date: args.date,
-            reportType: args.reportType
-          });
-        } catch (error: any) {
-          if (error.message.toLowerCase().includes('no sales') || error.message.includes('not found') || error.message.includes('404')) {
-            return { rows: [], rowCount: 0, summary: `No sales data for ${args.date || 'requested date'}. Try a different date or use get_monthly_revenue for aggregated data.` };
+        return {
+          result: result.result,
+          logs: result.logs.length > 0 ? result.logs : undefined
+        };
+      }
+
+      case 'execute': {
+        if (!args.code) throw new Error('code is required');
+
+        // Create a sandbox-friendly API wrapper
+        const api = {
+          request: async (opts: { method: string; path: string; params?: any; body?: any }) => {
+            return this.client.request(opts.path, opts.params, {
+              method: opts.method,
+              data: opts.body
+            });
           }
-          throw error;
+        };
+
+        const result = await executeInSandbox(args.code, { api });
+        if (result.error) {
+          return { error: result.error, logs: result.logs };
         }
-      
-      case 'get_revenue_metrics':
-        // Use FINANCIAL reports for complete revenue (includes renewals)
-        try {
-          const latest = await this.financeReportService.getLatestAvailable();
-          const MRR = latest.totalRevenue;
-          const ARR = MRR * 12;
-          
-          // Convert Map to object for JSON serialization
-          const byRegion: { [key: string]: number } = {};
-          latest.byRegion.forEach((value, key) => {
-            byRegion[key] = value;
-          });
-          
-          return {
-            MRR,
-            ARR,
-            currency: 'USD',
-            lastUpdated: latest.metadata.month,
-            byRegion,
-            notes: 'Complete revenue from FINANCIAL reports (includes all renewals). Reports delayed ~1 month.'
-          };
-        } catch (error: any) {
-          // Fallback to SALES reports if FINANCIAL not available
-          return await this.financeService.getRevenueMetrics(args.appId);
-        }
-      
-      case 'get_subscription_metrics':
-        try {
-          return await this.financeService.getSubscriptionMetrics();
-        } catch (error: any) {
-          if (error.message.toLowerCase().includes('invalid vendor') || error.message.includes('400') || error.message.includes('404')) {
-            return { summary: 'Subscription metrics not available via Sales Reports for this account. Use get_monthly_revenue or get_subscription_renewals instead.' };
-          }
-          throw error;
-        }
-      
-      case 'get_monthly_revenue':
-        if (!args.year || !args.month) {
-          throw new Error('Year and month are required for monthly revenue');
-        }
-        
-        // Try FINANCIAL reports first (complete revenue)
-        try {
-          const summary = await this.financeReportService.getMonthlySummary(args.year, args.month);
-          
-          // Convert Maps to objects for JSON serialization
-          const byProduct: { [key: string]: number } = {};
-          summary.byProduct.forEach((value, key) => {
-            byProduct[key] = value;
-          });
-          
-          const byRegion: { [key: string]: number } = {};
-          summary.byRegion.forEach((value, key) => {
-            byRegion[key] = value;
-          });
-          
-          return {
-            totalRevenue: summary.totalRevenue,
-            byProduct,
-            byRegion,
-            salesVsReturns: summary.salesVsReturns,
-            metadata: summary.metadata,
-            source: 'FINANCIAL',
-            notes: 'Complete revenue from FINANCIAL reports (includes all renewals)'
-          };
-        } catch (error: any) {
-          // Fallback to SALES reports if FINANCIAL not available
-          const salesData = await this.financeService.getMonthlyRevenue(args.year, args.month);
-          return {
-            ...salesData,
-            source: 'SALES',
-            notes: 'From SALES reports (new purchases only, excludes renewals)'
-          };
-        }
-      
-      case 'get_subscription_renewals':
-        return await this.subscriptionService.getSubscriptionRenewals(args.date);
-      
-      case 'get_monthly_subscription_analytics':
-        if (!args.year || !args.month) {
-          throw new Error('Year and month are required for subscription analytics');
-        }
-        return await this.subscriptionService.getMonthlySubscriptionAnalytics(args.year, args.month);
-      
-      // Analytics tools
-      case 'get_app_analytics':
-        if (!args.appId) {
-          throw new Error('App ID is required for analytics');
-        }
-        return await this.analyticsService.getAppAnalytics({
-          appId: args.appId,
-          metricType: args.metricType || 'USERS'
-        });
-      
-      // Beta testing tools
-      case 'get_testflight_metrics':
-        return await this.betaService.getTestFlightSummary(args.appId);
-      
-      case 'get_beta_testers':
-        return await this.betaService.getBetaTesters(args.limit || 100);
-      
-      // Review tools
-      case 'get_customer_reviews':
-        if (!args.appId) {
-          throw new Error('App ID is required for reviews');
-        }
-        return await this.reviewService.getCustomerReviews(args.appId, args.limit || 100);
-      
-      case 'get_review_metrics':
-        if (!args.appId) {
-          throw new Error('App ID is required for review metrics');
-        }
-        return await this.reviewService.getReviewSummary(args.appId);
-      
-      // Utility tools
-      case 'test_connection':
+        return {
+          result: result.result,
+          logs: result.logs.length > 0 ? result.logs : undefined
+        };
+      }
+
+      case 'test_connection': {
         const connected = await this.client.testConnection();
         return {
           connected,
-          message: connected ? 'Successfully connected to App Store Connect' : 'Connection failed'
+          message: connected ? 'Successfully connected to App Store Connect' : 'Connection failed',
+          server: 'appstore-connect-mcp',
+          version: '2.0.0',
+          mode: 'code-mode',
+          spec: {
+            apiVersion: this.spec.info.version,
+            endpoints: this.spec.pathCount,
+            schemas: this.spec.schemaCount
+          }
         };
-      
-      case 'get_api_stats':
-        return this.client.getStats();
-      
+      }
+
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        throw new Error(`Unknown tool: ${name}. Available: search, execute, test_connection`);
     }
   }
 

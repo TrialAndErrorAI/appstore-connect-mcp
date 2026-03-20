@@ -3,7 +3,7 @@ import { JWTManager } from '../auth/jwt-manager.js';
 import { PagedResponse, AppStoreError } from '../types/api.js';
 
 export class AppStoreClient {
-  private baseURL = 'https://api.appstoreconnect.apple.com/v1';
+  private baseURL = 'https://api.appstoreconnect.apple.com';
   private auth: JWTManager;
   private axiosInstance: AxiosInstance;
   private requestCount = 0;
@@ -50,27 +50,39 @@ export class AppStoreClient {
 
     try {
       // For reports endpoints, we need to handle binary/gzipped responses
-      const isReportEndpoint = endpoint.includes('Reports');
+      const isReportEndpoint = endpoint.includes('Reports') || endpoint.includes('reports');
+      const method = (options?.method || 'GET').toUpperCase();
       const config: AxiosRequestConfig = {
+        method,
+        url: endpoint,
         params,
-        ...options
+        data: options?.data,
+        ...options,
       };
-      
+
       // Set response type to arraybuffer for report endpoints to handle gzipped data
-      if (isReportEndpoint) {
+      if (isReportEndpoint && method === 'GET') {
         config.responseType = 'arraybuffer';
       }
-      
-      const response = await this.axiosInstance.get<T>(endpoint, config);
+
+      const response = await this.axiosInstance.request<T>(config);
       this.requestCount++;
-      
-      // For report endpoints, convert arraybuffer to string
-      if (isReportEndpoint && response.data instanceof ArrayBuffer) {
-        // Convert ArrayBuffer to string for processing
-        const buffer = Buffer.from(response.data);
-        return buffer as any;
+
+      // For report endpoints, decompress gzipped data
+      if (isReportEndpoint && Buffer.isBuffer(response.data)) {
+        const { gunzipSync } = await import('zlib');
+        const buf = response.data as unknown as Buffer;
+        if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+          try {
+            const decompressed = gunzipSync(buf).toString('utf-8');
+            return decompressed as any;
+          } catch {
+            return buf.toString('utf-8') as any;
+          }
+        }
+        return buf.toString('utf-8') as any;
       }
-      
+
       return response.data;
     } catch (error) {
       // Error is already handled by interceptor
@@ -208,7 +220,7 @@ export class AppStoreClient {
   async testConnection(): Promise<boolean> {
     try {
       // Try to fetch apps (simplest endpoint)
-      await this.request('/apps', { limit: 1 });
+      await this.request('/v1/apps', { limit: 1 });
       return true;
     } catch (error) {
       return false;
