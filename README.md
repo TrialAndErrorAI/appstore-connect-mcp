@@ -266,7 +266,7 @@ MIT — Use it, modify it, sell it. Just make it work.
 
 ## Credits
 
-Built by [Trial and Error Inc](https://trialanderror.ai). Used in production by [RenovateAI](https://renovateai.app), an AI-powered home design iOS app. Code mode pattern from [Cloudflare](https://blog.cloudflare.com/code-mode/).
+Built by [Trial and Error Inc](https://trialanderror.ai). Used in production by [RenovateAI](https://renovateai.app), an AI-powered home design app for iOS, Android, and web. Code mode pattern from [Cloudflare](https://blog.cloudflare.com/code-mode/).
 
 ---
 
