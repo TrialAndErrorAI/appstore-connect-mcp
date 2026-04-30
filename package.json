@@ -1,11 +1,34 @@
 {
-  "name": "appstore-connect-mcp",
+  "name": "@trialanderror/appstore-connect-mcp",
   "version": "2.0.0",
   "description": "Code Mode MCP server for App Store Connect — 923 endpoints through 2 tools",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-server-appstore-connect": "dist/index.js"
+  },
+  "files": [
+    "dist/api/**/*.js",
+    "dist/api/**/*.d.ts",
+    "dist/auth/**/*.js",
+    "dist/auth/**/*.d.ts",
+    "dist/executor/**/*.js",
+    "dist/executor/**/*.d.ts",
+    "dist/server/**/*.js",
+    "dist/server/**/*.d.ts",
+    "dist/spec/**/*.js",
+    "dist/spec/**/*.d.ts",
+    "dist/spec/openapi.json",
+    "dist/types/**/*.js",
+    "dist/types/**/*.d.ts",
+    "dist/index.js",
+    "dist/index.d.ts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && cp src/spec/openapi.json dist/spec/openapi.json",
+    "build": "tsc && cp src/spec/openapi.json dist/spec/openapi.json && chmod +x dist/index.js",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit",
     "test": "vitest",
@@ -16,17 +39,35 @@
     "test:monthly-aggregate": "tsx src/test-monthly-aggregate.ts",
     "test:v1.1.1": "tsx src/test-v1.1.1-fixes.ts",
     "test:july-revenue": "tsx src/test-july-revenue.ts",
-    "test:fixed-revenue": "tsx src/test-fixed-revenue.ts"
+    "test:fixed-revenue": "tsx src/test-fixed-revenue.ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "app-store-connect",
+    "apple",
     "ios",
-    "metrics",
+    "code-mode",
     "claude"
   ],
   "author": "Trial and Error Inc",
   "license": "MIT",
+  "homepage": "https://github.com/TrialAndErrorAI/appstore-connect-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrialAndErrorAI/appstore-connect-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TrialAndErrorAI/appstore-connect-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

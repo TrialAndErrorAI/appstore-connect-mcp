@@ -29,27 +29,53 @@ Code Mode:        923 endpoints → 2 tools   → ~1K tokens   → zero maintena
 
 ## Quick Start
 
+### 1. Get App Store Connect credentials
+
+1. Go to [App Store Connect](https://appstoreconnect.apple.com) → Users and Access → Integrations → Keys
+2. Click "+" to generate a new key (Admin or Finance role)
+3. Download the `.p8` file (only downloadable once!)
+4. Note your Key ID and Issuer ID
+
+### 2. Install via Claude Code
+
 ```bash
-git clone https://github.com/TrialAndErrorAI/appstore-connect-mcp
-cd appstore-connect-mcp
-npm install
-npm run build
+claude mcp add appstore-connect -s user \
+  -e APP_STORE_KEY_ID=YOUR_KEY_ID \
+  -e APP_STORE_ISSUER_ID=YOUR_ISSUER_ID \
+  -e APP_STORE_P8_PATH=/absolute/path/to/AuthKey_XXXXXXXXXX.p8 \
+  -e APP_STORE_VENDOR_NUMBER=YOUR_VENDOR_NUMBER \
+  -- npx -y @trialanderror/appstore-connect-mcp
 ```
+
+`-s user` makes the server available across all your projects. Drop `-e APP_STORE_VENDOR_NUMBER` if you don't need financial reports.
+
+Or skip the env-var inline form and set them in your shell / MCP config (see below).
+
+### 3. Configure credentials
+
+Three required env vars (one optional):
+
+| Variable | Description |
+|---|---|
+| `APP_STORE_KEY_ID` | 10-character key ID |
+| `APP_STORE_ISSUER_ID` | UUID issuer ID |
+| `APP_STORE_P8_PATH` | Absolute path to your `.p8` file |
+| `APP_STORE_VENDOR_NUMBER` *(optional)* | Required for financial reports |
 
 ### Configure for Claude Code
 
-Add to your project's `.mcp.json`:
+Either set env vars in your shell, or pass them via `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "appstore-connect": {
-      "command": "node",
-      "args": ["/path/to/appstore-connect-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@trialanderror/appstore-connect-mcp"],
       "env": {
         "APP_STORE_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",
-        "APP_STORE_P8_PATH": "/path/to/AuthKey.p8",
+        "APP_STORE_P8_PATH": "/path/to/AuthKey_XXXXXXXXXX.p8",
         "APP_STORE_VENDOR_NUMBER": "YOUR_VENDOR_NUMBER"
       }
     }
@@ -65,24 +91,28 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "appstore-connect": {
-      "command": "node",
-      "args": ["/path/to/appstore-connect-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@trialanderror/appstore-connect-mcp"],
       "env": {
         "APP_STORE_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",
-        "APP_STORE_P8_PATH": "/path/to/AuthKey.p8"
+        "APP_STORE_P8_PATH": "/path/to/AuthKey_XXXXXXXXXX.p8"
       }
     }
   }
 }
 ```
 
-### Get Credentials
+### Build from source (alternative)
 
-1. Go to [App Store Connect](https://appstoreconnect.apple.com) → Users and Access → Integrations → Keys
-2. Click "+" to generate a new key (Admin or Finance role)
-3. Download the .p8 file (only downloadable once!)
-4. Note your Key ID and Issuer ID
+```bash
+git clone https://github.com/TrialAndErrorAI/appstore-connect-mcp
+cd appstore-connect-mcp
+npm install
+npm run build
+```
+
+Then point your MCP config at `node /path/to/appstore-connect-mcp/dist/index.js` instead of `npx`.
 
 ## Usage Examples
 
@@ -204,7 +234,7 @@ src/
 │   ├── openapi.json          — Apple's official spec (923 endpoints)
 │   └── loader.ts             — Loads + resolves $refs for flat traversal
 ├── executor/sandbox.ts       — vm-based sandboxed execution
-├── server/mcp-server.ts      — MCP server (3 tools)
+├── server/mcp-server.ts      — MCP server (search, execute, test_connection)
 └── index.ts                  — Entry point
 ```
 
@@ -236,11 +266,7 @@ MIT — Use it, modify it, sell it. Just make it work.
 
 ## Credits
 
-Built by [Trial and Error Inc](https://trialanderror.ai).
-
-First production use: [RenovateAI](https://renovateai.app) — AI home design, #28 in Design Tools.
-
-Code mode pattern from [Cloudflare](https://blog.cloudflare.com/code-mode/).
+Built by [Trial and Error Inc](https://trialanderror.ai). Used in production by [RenovateAI](https://renovateai.app), an AI-powered home design iOS app. Code mode pattern from [Cloudflare](https://blog.cloudflare.com/code-mode/).
 
 ---
 
