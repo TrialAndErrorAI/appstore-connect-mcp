@@ -1,5 +1,5 @@
 {
-  "name": "@trialanderror/appstore-connect-mcp",
+  "name": "@trialanderror-ai/appstore-connect-mcp",
   "version": "2.0.0",
   "description": "Code Mode MCP server for App Store Connect — 923 endpoints through 2 tools",
   "main": "dist/index.js",

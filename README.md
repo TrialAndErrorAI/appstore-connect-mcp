@@ -44,7 +44,7 @@ claude mcp add appstore-connect -s user \
   -e APP_STORE_ISSUER_ID=YOUR_ISSUER_ID \
   -e APP_STORE_P8_PATH=/absolute/path/to/AuthKey_XXXXXXXXXX.p8 \
   -e APP_STORE_VENDOR_NUMBER=YOUR_VENDOR_NUMBER \
-  -- npx -y @trialanderror/appstore-connect-mcp
+  -- npx -y @trialanderror-ai/appstore-connect-mcp
 ```
 
 `-s user` makes the server available across all your projects. Drop `-e APP_STORE_VENDOR_NUMBER` if you don't need financial reports.
@@ -71,7 +71,7 @@ Either set env vars in your shell, or pass them via `.mcp.json`:
   "mcpServers": {
     "appstore-connect": {
       "command": "npx",
-      "args": ["-y", "@trialanderror/appstore-connect-mcp"],
+      "args": ["-y", "@trialanderror-ai/appstore-connect-mcp"],
       "env": {
         "APP_STORE_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",
@@ -92,7 +92,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "appstore-connect": {
       "command": "npx",
-      "args": ["-y", "@trialanderror/appstore-connect-mcp"],
+      "args": ["-y", "@trialanderror-ai/appstore-connect-mcp"],
       "env": {
         "APP_STORE_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_ISSUER_ID": "YOUR_ISSUER_ID",

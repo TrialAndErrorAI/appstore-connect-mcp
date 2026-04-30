@@ -2,7 +2,7 @@
 
 ## 2.0.0 — 2026-04-30
 
-First public npm release as `@trialanderror/appstore-connect-mcp`.
+First public npm release as `@trialanderror-ai/appstore-connect-mcp`.
 
 - **Code Mode architecture**: 923 App Store Connect endpoints exposed through 2 tools (`search`, `execute`) plus a `test_connection` health check.
 - **Spec-driven**: Apple's OpenAPI spec ships in the package; LLMs query it directly. Adding endpoints = Apple updates their spec, zero code changes here.
