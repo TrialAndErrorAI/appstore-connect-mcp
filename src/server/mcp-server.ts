@@ -20,6 +20,10 @@ import { loadSpec } from '../spec/loader.js';
 import { executeInSandbox } from '../executor/sandbox.js';
 import { ServerConfig } from '../types/config.js';
 
+// Companion reference doc path — kept in sync with tool descriptions below.
+// See docs/RFC-001 Maintenance Contract section.
+const COOKBOOK_PATH = 'docs/COOKBOOK.md';
+
 export class AppStoreMCPServer {
   private server: Server;
   private auth: JWTManager;
@@ -82,6 +86,8 @@ export class AppStoreMCPServer {
         name: 'search',
         description: `Write JavaScript to explore the App Store Connect API specification (${this.spec.pathCount} endpoints, ${this.spec.schemaCount} schemas, API v${this.spec.info.version}).
 
+**Before using this tool**, load the companion cookbook at \`${COOKBOOK_PATH}\` in this repo. It contains the pagination contract, enum tables (eventState, appStoreState, etc.), common pitfalls (gzipped reports, rejected sort params, response truncation), and worked recipes. Without it, the most common consumer errors recur (wrong N of M results, missed enum states, sandbox output truncation).
+
 Available globals:
 - \`spec\` — Object with all API endpoints. Structure: spec.paths['/v1/endpoint'].method
 
@@ -118,6 +124,8 @@ Example — find all review-related endpoints:
       {
         name: 'execute',
         description: `Write JavaScript to call the App Store Connect API. Authentication is automatic (JWT injected).
+
+**Before using this tool**, load the companion cookbook at \`${COOKBOOK_PATH}\` in this repo. It contains the pagination contract (every list endpoint is paginated — check \`res.links?.next\`), enum tables (eventState includes \`PAST\` distinct from \`ARCHIVED\`; full appStoreState set; etc.), common pitfalls (gzipped reports, rejected sort params on customerReviews, territory schedules embed 170 country codes, 40K sandbox output cap), and worked recipes for common tasks. Skipping it leads to the most common consumer errors: silent pagination truncation, missing event states, response truncation.
 
 Available globals:
 - \`api\` — Authenticated client for App Store Connect.
