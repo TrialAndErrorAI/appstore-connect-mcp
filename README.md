@@ -1,19 +1,19 @@
 # App Store Connect MCP Server — Code Mode
 
-**923 endpoints. 2 tools. The spec IS the implementation.**
+**1027 endpoints. 2 tools. The spec IS the implementation.**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.27-green)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![API Version](https://img.shields.io/badge/ASC%20API-v4.3-orange)](https://developer.apple.com/app-store-connect/api/)
+[![API Version](https://img.shields.io/badge/ASC%20API-v4.6-orange)](https://developer.apple.com/app-store-connect/api/)
 
 ## The Problem
 
-Traditional MCP servers wrap each API endpoint as a separate tool. Apple's App Store Connect API has **923 endpoints**. That means 923 tool definitions, ~100K+ context tokens, and a new release every time Apple adds an endpoint.
+Traditional MCP servers wrap each API endpoint as a separate tool. Apple's App Store Connect API has **1027 endpoints**. That means 1027 tool definitions, ~100K+ context tokens, and a new release every time Apple adds an endpoint.
 
 ## The Solution
 
-Code Mode: **2 tools replace 923**.
+Code Mode: **2 tools replace 1027**.
 
 | Tool | What It Does |
 |------|-------------|
@@ -23,8 +23,8 @@ Code Mode: **2 tools replace 923**.
 The LLM writes the query. The spec IS the implementation. Adding endpoints = Apple updates their spec. Zero code changes on our side.
 
 ```
-Traditional MCP:  923 endpoints → 923 tools → ~100K tokens → constant maintenance
-Code Mode:        923 endpoints → 2 tools   → ~1K tokens   → zero maintenance
+Traditional MCP:  1027 endpoints → 1027 tools → ~100K tokens → constant maintenance
+Code Mode:        1027 endpoints → 2 tools    → ~1K tokens   → zero maintenance
 ```
 
 ## Quick Start
@@ -172,16 +172,16 @@ return {
 
 ## What You Can Access
 
-All 923 App Store Connect API endpoints, including:
+All 1027 App Store Connect API endpoints, including:
 
 | Category | Endpoints | What You Get |
 |----------|-----------|-------------|
-| **App Metadata** | 29 | Title, subtitle, keywords, description — read AND write |
+| **App Metadata** | 31 | Title, subtitle, keywords, description — read AND write |
 | **Analytics** | 10 | Impressions, page views, downloads, source attribution |
 | **Sales & Finance** | 2 | Revenue, units, proceeds by country |
 | **Customer Reviews** | 5 | Ratings, review text, respond to reviews |
-| **Subscriptions** | 30 | Sub management, pricing, groups, offers |
-| **In-App Purchases** | 29 | IAP management, offer codes |
+| **Subscriptions** | 42 | Sub management, pricing, groups, offers |
+| **In-App Purchases** | 31 | IAP management, offer codes |
 | **Versions** | 28 | Version management, phased rollout |
 | **Screenshots** | 12 | Upload, reorder, manage screenshot sets |
 | **A/B Testing** | 24 | Product page experiments, treatment variants |
@@ -201,7 +201,7 @@ Claude writes JavaScript
 ┌─────────────────────────────────────────────────┐
 │ search({ code })                                │
 │  Sandbox executes code against OpenAPI spec     │
-│  923 paths, 1337 schemas — pre-resolved $refs   │
+│  1027 paths, 1505 schemas — pre-resolved $refs  │
 │  Returns: matching endpoints + parameters       │
 └─────────────────────────────────────────────────┘
     │
@@ -231,7 +231,7 @@ src/
 ├── auth/jwt-manager.ts      — JWT with P8 key, ES256, 19-min cache
 ├── api/client.ts             — HTTP client, rate limiting, gzip handling
 ├── spec/
-│   ├── openapi.json          — Apple's official spec (923 endpoints)
+│   ├── openapi.json          — Apple's official spec (1027 endpoints)
 │   └── loader.ts             — Loads + resolves $refs for flat traversal
 ├── executor/sandbox.ts       — vm-based sandboxed execution
 ├── server/mcp-server.ts      — MCP server (search, execute, test_connection)
@@ -242,11 +242,11 @@ src/
 
 | | Traditional MCP | Code Mode |
 |---|---|---|
-| **Tools** | 1 per endpoint (923) | 2 total |
+| **Tools** | 1 per endpoint (1027) | 2 total |
 | **Context tokens** | ~100K+ | ~1K |
 | **Adding endpoints** | New tool + code + schema + release | Apple updates spec. Zero changes. |
 | **Chaining calls** | Re-enter LLM between each | Single execution, multiple calls |
-| **Maintenance** | Update 923 tool definitions | Update 1 spec file |
+| **Maintenance** | Update 1027 tool definitions | Update 1 spec file |
 
 Inspired by [Cloudflare's Code Mode pattern](https://blog.cloudflare.com/code-mode/).
 
