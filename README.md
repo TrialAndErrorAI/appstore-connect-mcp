@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.27-green)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![API Version](https://img.shields.io/badge/ASC%20API-v4.3-orange)](https://developer.apple.com/app-store-connect/api/)
+[![API Version](https://img.shields.io/badge/ASC%20API-v4.6-orange)](https://developer.apple.com/app-store-connect/api/)
 
 ## The Problem
 
@@ -176,12 +176,12 @@ All 1027 App Store Connect API endpoints, including:
 
 | Category | Endpoints | What You Get |
 |----------|-----------|-------------|
-| **App Metadata** | 29 | Title, subtitle, keywords, description — read AND write |
+| **App Metadata** | 31 | Title, subtitle, keywords, description — read AND write |
 | **Analytics** | 10 | Impressions, page views, downloads, source attribution |
 | **Sales & Finance** | 2 | Revenue, units, proceeds by country |
 | **Customer Reviews** | 5 | Ratings, review text, respond to reviews |
-| **Subscriptions** | 30 | Sub management, pricing, groups, offers |
-| **In-App Purchases** | 29 | IAP management, offer codes |
+| **Subscriptions** | 42 | Sub management, pricing, groups, offers |
+| **In-App Purchases** | 31 | IAP management, offer codes |
 | **Versions** | 28 | Version management, phased rollout |
 | **Screenshots** | 12 | Upload, reorder, manage screenshot sets |
 | **A/B Testing** | 24 | Product page experiments, treatment variants |
