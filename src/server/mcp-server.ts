@@ -1,7 +1,7 @@
 /**
  * App Store Connect MCP Server — Code Mode (v2.0)
  *
- * Two tools. 923 endpoints. Fixed token cost.
+ * Two tools. 1027 endpoints. Fixed token cost.
  *
  * search(code) — Agent writes JS to query the API spec
  * execute(code) — Agent writes JS to call the authenticated API
@@ -46,7 +46,7 @@ export class AppStoreMCPServer {
     this.auth = new JWTManager(config.auth);
     this.client = new AppStoreClient(this.auth);
 
-    // Load the OpenAPI spec (923 paths, pre-resolved)
+    // Load the OpenAPI spec (1027 paths, pre-resolved)
     this.spec = loadSpec();
 
     this.registerHandlers();
